@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ApiParser": {
+      "commandName": "Project",
+      "commandLineArgs": "c:\\temp\\data.csv"
+    }
+  }
+}

@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  tagged-release:
+    name: "Tagged Release"
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.301
+    - name: Restore dependencies
+      run: dotnet restore src/ApiParser/ApiParser.csproj
+    
+    - name: Publish Win x64
+      run: dotnet publish src/ApiParser/ApiParser.csproj -r win-x64 -c Release -p:PublishSingleFile=true -p:CopyOutputSymbolsToPublishDirectory=false --self-contained true
+    - name: Publish OSX x64
+      run: dotnet publish src/ApiParser/ApiParser.csproj -r osx-x64 -c Release -p:PublishSingleFile=true -p:CopyOutputSymbolsToPublishDirectory=false --self-contained true
+    - name: Publish Linux x64
+      run: dotnet publish src/ApiParser/ApiParser.csproj -r linux-x64 -c Release -p:PublishSingleFile=true -p:CopyOutputSymbolsToPublishDirectory=false --self-contained true
+    
+    - name: Zip Winx64
+      uses: papeloto/action-zip@v1
+      with:
+        files: src/ApiParser/bin/Release/netcoreapp3.1/win-x64/publish/
+        dest: ApiParser-win-x64.zip
+    - name: Zip Osx64
+      uses: papeloto/action-zip@v1
+      with:
+        files: src/ApiParser/bin/Release/netcoreapp3.1/osx-x64/publish/
+        dest: ApiParser-osx-x64.zip
+    - name: Zip Linux64
+      uses: papeloto/action-zip@v1
+      with:
+        files: src/ApiParser/bin/Release/netcoreapp3.1/linux-x64/publish/
+        dest: ApiParser-linux-x64.zip
+
+    - name: Create Draft Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: ${{ github.ref }}
+        draft: true
+        prerelease: false
+
+    - uses: actions/upload-release-asset@v1.0.1
+      name: Upload Win Zip to Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./ApiParser-win-x64.zip
+        asset_name: ApiParser-win-x64.zip
+        asset_content_type: application/zip
+    - uses: actions/upload-release-asset@v1.0.1
+      name: Upload Osx Zip to Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./ApiParser-osx-x64.zip
+        asset_name: ApiParser-osx-x64.zip
+        asset_content_type: application/zip
+    - uses: actions/upload-release-asset@v1.0.1
+      name: Upload Osx Zip to Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./ApiParser-linux-x64.zip
+        asset_name: ApiParser-linux-x64.zip
+        asset_content_type: application/zip
+    
+    - uses: eregon/publish-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        release_id: ${{ steps.create_release.outputs.id }}

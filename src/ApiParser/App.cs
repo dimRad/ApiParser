@@ -74,27 +74,30 @@ namespace ApiParser
 
                     if (string.IsNullOrEmpty(rowData))
                     {
-                        if (_appSettings.ShowNoDataWarning) _logger.LogWarning($"Row {i} column {_appSettings.UrlColumn} has no data.");
+                        if (_appSettings.ShowNoDataWarning) _logger.LogWarning(string.Format(Constants.LogWarning, i, row[_appSettings.UrlColumn]));
                         skipped++;
                         continue;
                     }
                     string data = string.Empty;
                     try
                     {
-                        data = await _dataGetter.GetData(rowData).ConfigureAwait(false);
+                        data = await _dataGetter.GetResponseData(rowData).ConfigureAwait(false);
                         await WriteInFile(csv, data, row, columnNames);
                         processed++;
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, $"Error while processing row {i}, data {row[_appSettings.UrlColumn]}");
-                        await WriteInFile(csv, data, row, columnNames, true);
-                        processed++;
-                    }
+                        if (_appSettings.ShowNoDataWarning)
+                        {
+                            _logger.LogInformation(string.Format(Constants.LogProcessingInfo, i, row[_appSettings.UrlColumn]));
+                        }
+                        else
+                        {
+                            _logger.LogError(ex, string.Format(Constants.LogErrorProcessing, i, row[_appSettings.UrlColumn]));
+                        }
 
-                    if (i % 100 == 0)
-                    {
-                        _logger.LogInformation($"Processed {i} rows");
+                        await WriteInFile(csv, ex.Message, row, columnNames);
+                        processed++;
                     }
 
                     i++;
@@ -103,7 +106,7 @@ namespace ApiParser
 
             sw.Stop();
 
-            _logger.LogInformation($"Processing finished, skipped: {skipped}, processed: {processed}, took: {sw.Elapsed.TotalMinutes} mins or {sw.Elapsed.TotalSeconds} seconds");
+            _logger.LogInformation(string.Format(Constants.LogEndProcessing, skipped, processed, sw.Elapsed.TotalMinutes, sw.Elapsed.TotalSeconds));
         }
 
 
@@ -115,11 +118,8 @@ namespace ApiParser
             return Path.Combine(directory, newFileName);
         }
 
-        private async Task WriteInFile(CsvWriter csv, string data, string[] row, IEnumerable<string> columnNames, bool isExceptionTrown = false)
+        private async Task WriteInFile(CsvWriter csv, string data, string[] row, IEnumerable<string> columnNames)
         {
-            string noMatchingRecords = Constants.ErrorResponseMessage;
-            string message = isExceptionTrown ? noMatchingRecords : data;
-
             if (IsColumnNamesRequired)
             {
                 IsColumnNamesRequired = false;
@@ -127,7 +127,7 @@ namespace ApiParser
             }
             else
             {
-                await LoopRows(csv, row, message);
+                await LoopRows(csv, row, data);
             }
         }
         private async Task LoopRows(CsvWriter csv, string[] rows, string message)

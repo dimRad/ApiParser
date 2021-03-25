@@ -28,7 +28,24 @@ namespace ApiParser.Data
         public async Task<string> GetData(string urlData)
         {
             string url = string.Format(_appSettings.UrlFormat, urlData);
+
             return await _httpClient.GetStringAsync(url).ConfigureAwait(false);
+        }
+
+
+        public async Task<string> GetResponseData(string urlData)
+        {
+            string url = string.Format(_appSettings.UrlFormat, urlData);
+
+            var response = await _httpClient.GetAsync(url).ConfigureAwait(false);
+            int statusCode = (int)response.StatusCode;
+            var data = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            if (statusCode != 200)
+            {
+                throw new Exception(data, new Exception($"{statusCode} {response.StatusCode}"));
+            }
+            return data;
         }
     }
 }

@@ -30,7 +30,6 @@ namespace ApiParser
         }
 
         private bool IsColumnNamesRequired { get; set; }
-        private bool IsFirstRow { get; set; } = true;
 
         public async Task Run(string inputFilePath)
         {
@@ -72,11 +71,6 @@ namespace ApiParser
                         }
                         columnNames.Add(Constants.ColumnNameResponse);
                     }
-                    if (IsFirstRow && IsColumnNamesRequired == false)
-                    {
-                        IsFirstRow = false;
-                        continue;
-                    }
 
                     if (string.IsNullOrEmpty(rowData))
                     {
@@ -85,7 +79,6 @@ namespace ApiParser
                         continue;
                     }
                     string data = string.Empty;
-                    IsFirstRow = false;
                     try
                     {
                         data = await _dataGetter.GetData(rowData).ConfigureAwait(false);

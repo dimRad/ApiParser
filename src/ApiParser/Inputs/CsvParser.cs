@@ -29,14 +29,6 @@ namespace ApiParser.Inputs
             using (var reader = new StreamReader(inputFilePath))
             using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
             {
-                //csv.Configuration.HasHeaderRecord = _appSettings.HasHeaderRecord;
-
-                //if (_appSettings.HasHeaderRecord)
-                //{
-                //    //csv.Read();
-                //    //csv.ReadHeader();
-                //}
-
                 while (csv.Read())
                 {
                     List<string> rowData = new List<string>();
